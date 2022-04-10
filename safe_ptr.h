@@ -283,7 +283,7 @@ namespace sf {
         spinlock_t() { lock_flag.clear(); }
 
         bool try_lock() { return !lock_flag.test_and_set(std::memory_order_acquire); }
-        void lock() { for (volatile size_t i = 0; !try_lock(); ++i) if (i % 100000 == 0) std::this_thread::yield(); }
+        void lock() { for ( size_t i = 0; !try_lock(); ++i) if (i % 100000 == 0) std::this_thread::yield(); }
         void unlock() { lock_flag.clear(std::memory_order_release); }
     };
     // ---------------------------------------------------------------
@@ -325,7 +325,7 @@ namespace sf {
         }
 
         void lock() {
-            for (volatile size_t i = 0; !try_lock(); ++i)
+            for ( size_t i = 0; !try_lock(); ++i)
                 if (i % 100000 == 0) std::this_thread::yield();
         }
 
@@ -435,7 +435,7 @@ namespace sf {
 
         public:
             contention_free_shared_mutex() :
-                shared_locks_array_ptr(std::make_shared<array_slock_t>()), shared_locks_array(*shared_locks_array_ptr), want_x_lock(false), recursive_xlock_count(0),
+                want_x_lock(false), shared_locks_array_ptr(std::make_shared<array_slock_t>()), shared_locks_array(*shared_locks_array_ptr),  recursive_xlock_count(0),
 				owner_thread_id(thread_id_t()) {}
 
             ~contention_free_shared_mutex() {
@@ -480,7 +480,7 @@ namespace sf {
                         shared_locks_array[register_index].value.store(recursion_depth + 1, std::memory_order_seq_cst); // if first -> sequential
                         while (want_x_lock.load(std::memory_order_seq_cst)) {
                             shared_locks_array[register_index].value.store(recursion_depth, std::memory_order_seq_cst);
-                            for (volatile size_t i = 0; want_x_lock.load(std::memory_order_seq_cst); ++i) 
+                            for ( size_t i = 0; want_x_lock.load(std::memory_order_seq_cst); ++i) 
 								if (i % 100000 == 0) std::this_thread::yield();
                             shared_locks_array[register_index].value.store(recursion_depth + 1, std::memory_order_seq_cst);
                         }
